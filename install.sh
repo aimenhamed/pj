@@ -1,9 +1,27 @@
 #!/bin/bash
 
+add_pj_to_shell() {
+    local shell="$1"
+    local rc_file="$2"
+    local pj_function="$3"
+
+    if [ -f "$rc_file" ]; then
+        # Check if the pj function already exists in the rc file
+        if grep -q "pj()" "$rc_file"; then
+            echo "pj function already exists in $rc_file."
+        else
+            # Append the pj function definition to rc file
+            echo "$pj_function" >> "$rc_file"
+            echo "Added pj function to $rc_file."
+        fi
+    else
+        echo "$rc_file not found."
+    fi
+}
+
 cargo build --release
 sudo cp target/release/pj /usr/local/bin/pj
 
-# Define the pj function
 pj_function='pj() {
   CONFIG_PATH="$HOME/.pj.json"
   /usr/local/bin/pj "$@"
@@ -13,18 +31,16 @@ pj_function='pj() {
   fi
 }'
 
-# Check if .zshrc exists
-zshrc_file=~/.zshrc
-if [ -f "$zshrc_file" ]; then
-    # Check if the pj function already exists in .zshrc
-    if grep -q "pj()" "$zshrc_file"; then
-        echo "pj function already exists in $zshrc_file."
-    else
-        # Append the pj function definition to .zshrc
-        echo "$pj_function" >> "$zshrc_file"
-        echo "Added pj function to $zshrc_file."
-    fi
-else
-    echo "$zshrc_file not found."
-fi
+shell_type="$(basename "$SHELL")"
+case "$shell_type" in
+    "bash")
+        add_pj_to_shell "$shell_type" "$HOME/.bashrc" "$pj_function"
+        ;;
+    "zsh")
+        add_pj_to_shell "$shell_type" "$HOME/.zshrc" "$pj_function"
+        ;;
+    *)  
+        echo "Unsupported shell: $shell_type. Cannot add pj function to configuration file automatically."
+        ;;
+esac
 
